@@ -1,6 +1,22 @@
 import os
 import shutil
 import subprocess
+import sys
+
+# Only Windows is supported
+if sys.platform != "win32":
+    print("Only Windows is supported")
+    exit(1)
+
+# Get the build tool
+if len(sys.argv) > 1:
+    if sys.argv[1].lower() == "ninja":
+        build_tool = "ninja"
+    else:
+        print("Unknown build tool")
+        exit(1)
+else:
+    build_tool = "msvc"
 
 # Get the directory of the current file
 BASEDIR = os.path.dirname(os.path.abspath(__file__))
@@ -20,25 +36,20 @@ conan_install_cmd = [
 ]
 subprocess.run(conan_install_cmd, cwd=BASEDIR, check=True)
 
-# cd to the build directory
-os.chdir(os.path.join(BASEDIR, "conan-build-release"))
-
 # Configure CMake Project
-cmake_configure_cmd = [
-    "cmake",
-    "..",
-    "-G",
-    "Visual Studio 17 2022",
-    "-DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake",
-]
+if build_tool == "ninja":
+    cmake_configure_cmd = ["cmake", "--preset", "conan-release"]
+else:
+    cmake_configure_cmd = ["cmake", "--preset", "conan-default"]
 subprocess.run(cmake_configure_cmd, check=True)
 
 # Build CMake Project
-cmake_build_cmd = ["cmake", "--build", ".", "--config", "Release"]
+cmake_build_cmd = ["cmake", "--build", "--preset", "conan-release"]
 subprocess.run(cmake_build_cmd, check=True)
 
 # Run the executable file
-executable_path = os.path.join(
-    BASEDIR, "conan-build-release", "Release", "ScratchEngine.exe"
-)
+if build_tool == "ninja":
+    executable_path = os.path.join(build_dir, "ScratchEngine.exe")
+else:
+    executable_path = os.path.join(build_dir, "Release", "ScratchEngine.exe")
 subprocess.run([executable_path], check=True)
