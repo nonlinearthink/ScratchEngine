@@ -1,7 +1,7 @@
 import os
 from conan import ConanFile
 from conan.tools.files import copy
-from conan.tools.cmake import CMake
+from conan.tools.cmake import cmake_layout
 
 
 class ScratchEngine(ConanFile):
@@ -34,3 +34,6 @@ class ScratchEngine(ConanFile):
             os.path.join(self.dependencies["imgui"].package_folder, "res", "bindings"),
             os.path.join(self.source_folder, "bindings"),
         )
+
+    def layout(self):
+        cmake_layout(self)

@@ -2,37 +2,40 @@
 
 My first Game Engine based on `Dear ImGUI` and `DirectX 12`.
 
-## Run
+## Getting Started
 
-**Runs on `Windows` only.**
+**Could run on `Windows` only.**
 
-And make sure you have `python` installed.
+### Prepare
 
 ```shell
 pip install conan
-conan profile default --detect
-python run_release.py
+conan profile detect --name cmake_msvc_ninja
+python prebuild.py --release # or --debug
 ```
 
-### Run with Ninja
-
-Add settings to your conan profile.
+Add settings to your profile `cmake_msvc_ninja`.
 
 ```
 [conf]
 tools.cmake.cmaketoolchain:generator=Ninja
 ```
 
-It is possible that you need to run:
+### Activate Environment
 
-```bat
-conan-build-release\conanbuild.bat
+```shell
+build\Debug\generators\conanbuild.bat
+# or build\Release\generators\conanbuild.bat
 ```
 
-It will activate the `MSVC` environment. And it seems only work when you use `Command Prompt`.
+Open your `VS Code` with recommended extensions:
 
-Finally, you can run:
-
+```shell
+code .
 ```
-python run_release.py ninja
+
+### Run
+
+```shell
+python build.py --release # or --debug
 ```
