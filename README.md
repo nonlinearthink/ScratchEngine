@@ -6,36 +6,45 @@ My first Game Engine based on `Dear ImGUI` and `DirectX 12`.
 
 **Could run on `Windows` only.**
 
-### Prepare
+### Setup Conan Environment
+
+1. Install Conan and create your profile:
+
+    ```shell
+    pip install conan
+    conan profile detect --name cmake_ninja_msvc_profile
+    ```
+
+2. Add settings to your `cmake_ninja_msvc_profile` profile:
+
+    ```text
+    [conf]
+    tools.cmake.cmaketoolchain:generator=Ninja
+    ```
+
+3. Run `prebuild.py`:
+
+    ```shell
+    python prebuild.py --debug # or --release
+    ```
+
+### Setup IDE
+
+1. Run `conanbuild.bat` to activate required environments:
+
+    ```shell
+    build\Release\generators\conanbuild.bat
+    # or build\Debug\generators\conanbuild.bat
+    ```
+
+2. Open your `VS Code` for example:
+
+    ```shell
+    code .
+    ```
+
+### Run Code
 
 ```shell
-pip install conan
-conan profile detect --name cmake_msvc_ninja
-python prebuild.py --release # or --debug
-```
-
-Add settings to your profile `cmake_msvc_ninja`.
-
-```
-[conf]
-tools.cmake.cmaketoolchain:generator=Ninja
-```
-
-### Activate Environment
-
-```shell
-build\Debug\generators\conanbuild.bat
-# or build\Release\generators\conanbuild.bat
-```
-
-Open your `VS Code` with recommended extensions:
-
-```shell
-code .
-```
-
-### Run
-
-```shell
-python build.py --release # or --debug
+python build.py --debug # or --release
 ```

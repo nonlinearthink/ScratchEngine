@@ -7,15 +7,14 @@ project(ScratchEngine VERSION 0.1.0 LANGUAGES C CXX)
 find_package(imgui REQUIRED)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-file(GLOB_RECURSE IMGUI_BINDINGS "${CMAKE_SOURCE_DIR}/bindings/*.h" "${CMAKE_SOURCE_DIR}/bindings/*.cpp")
-
 set(
     SCRATCH_ENGINE_FILES
     src/main.cpp
+    src/helper.h
     src/engine.h
     src/engine.cpp
 )
+file(GLOB_RECURSE IMGUI_BINDINGS "${CMAKE_SOURCE_DIR}/bindings/*.h" "${CMAKE_SOURCE_DIR}/bindings/*.cpp")
 
 add_executable(${PROJECT_NAME} ${SCRATCH_ENGINE_FILES} ${IMGUI_BINDINGS})
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/bindings)
