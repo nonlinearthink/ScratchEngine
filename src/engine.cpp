@@ -3,10 +3,8 @@
 using namespace ScratchEngine;
 using namespace Microsoft::WRL;
 
-Engine::~Engine() { Shutdown(); }
-
 bool Engine::Initialize() {
-    if (main_device_.Get()) {
+    if (main_device_) {
         Shutdown();
     }
 
@@ -47,14 +45,20 @@ bool Engine::Initialize() {
         return HandleInitializeFailed();
     }
 
+    // Create the main device.
     THROW_IF_FAILED(hr = D3D12CreateDevice(main_adapter.Get(),
                                            maximum_feature_level,
                                            IID_PPV_ARGS(&main_device_)));
     if (FAILED(hr)) {
         return HandleInitializeFailed();
     }
+    NAME_D3D12_OBJECT(main_device_, L"Main D3D12 Device");
 
-    // NAME_D3D12_OBJECT(main_device_, "Main D3D12 Device");
+    new (&d3d12_command_)
+        D3D12Command(main_device_, D3D12_COMMAND_LIST_TYPE_DIRECT);
+    if (!d3d12_command_.valid()) {
+        return HandleInitializeFailed();
+    }
 
 #ifdef _DEBUG
     {
@@ -71,34 +75,52 @@ bool Engine::Initialize() {
     return true;
 }
 
+void Engine::Render() {
+    // Wait for the GPU to finish. Reset the allocator once GPU is done with it.
+    // This will frees the memory that was used to store commands.
+    d3d12_command_.BeginFrame();
+
+    ID3D12GraphicsCommandList6 *command_list{d3d12_command_.command_list()};
+
+    // Done recording commands and execute commands now. Signal and increase the
+    // fence value for next frame.
+    d3d12_command_.EndFrame();
+}
+
 void Engine::Shutdown() {
-    auto factory = factory_.Get();
-    ReleaseResource(factory);
+    d3d12_command_.Release();
+
+    ReleaseResource(factory_);
 
 #ifdef _DEBUG
     {
-        ComPtr<ID3D12InfoQueue> info_queue;
-        THROW_IF_FAILED(
-            main_device_->QueryInterface(IID_PPV_ARGS(&info_queue)));
-        // Disable severities.
-        info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION,
-                                       false);
-        info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, false);
-        info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, false);
+        if (!main_device_) {
+            return;
+        }
+
+        {
+            ComPtr<ID3D12InfoQueue> info_queue;
+            THROW_IF_FAILED(
+                main_device_->QueryInterface(IID_PPV_ARGS(&info_queue)));
+            // Disable severities.
+            info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION,
+                                           false);
+            info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, false);
+            info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING,
+                                           false);
+        }
 
         ComPtr<ID3D12DebugDevice2> debugDevice;
         THROW_IF_FAILED(
             main_device_->QueryInterface(IID_PPV_ARGS(&debugDevice)));
-        auto device = main_device_.Get();
-        ReleaseResource(device);
+        ReleaseResource(main_device_);
         // Report live objects that causes memory leaks when exit.
         THROW_IF_FAILED(debugDevice->ReportLiveDeviceObjects(
             D3D12_RLDO_SUMMARY | D3D12_RLDO_DETAIL |
             D3D12_RLDO_IGNORE_INTERNAL));
     }
 #else
-    auto device = main_device_.Get();
-    ReleaseResource(device);
+    ReleaseResource(main_device_);
 #endif
 }
 

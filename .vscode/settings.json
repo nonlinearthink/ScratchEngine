@@ -1,6 +1,7 @@
 {
     "C_Cpp.intelliSenseEngine": "disabled",
     "clangd.arguments": [
+        "-std=c++17",
         "-compile-commands-dir=build/Debug"
     ],
     "cmake.generator": "Ninja",
