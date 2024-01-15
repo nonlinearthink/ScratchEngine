@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <cstdio>
 
+#pragma region macro
+
 #ifndef DISABLE_COPY
 #define DISABLE_COPY(class_name)                     \
     explicit class_name(const class_name&) = delete; \
@@ -21,6 +23,10 @@
 #endif
 
 #ifdef _DEBUG
+
+#ifndef DEBUG_ONLY_CODE
+#define DEBUG_ONLY_CODE(x) x
+#endif  // !DEBUG_ONLY_CODE
 
 #ifndef THROW_IF_FAILED
 #define THROW_IF_FAILED(x)                      \
@@ -61,6 +67,10 @@
 
 #else
 
+#ifndef DEBUG_ONLY_CODE
+#define DEBUG_ONLY_CODE(x)
+#endif  // !DEBUG_ONLY_CODE
+
 #ifndef THROW_IF_FAILED
 #define THROW_IF_FAILED(x) x
 #endif  // !THROW_IF_FAILED
@@ -75,8 +85,24 @@
 
 #endif  // !_DEBUG
 
-namespace ScratchEngine {
-const uint32_t FRAME_BUFFER_COUNT{3};
+#pragma endregion macro
+
+#pragma region types
+
+typedef int32_t i32;
+typedef int64_t i64;
+typedef uint32_t u32;
+typedef uint64_t u64;
+
+#pragma endregion types
+
+#pragma region constants
+
+const u32 FRAME_BUFFER_COUNT{3};
+
+#pragma endregion constants
+
+#pragma region templates
 
 // Release a resource having a Release method and set it to nullptr.
 template <typename T>
@@ -86,4 +112,5 @@ constexpr void ReleaseResource(T*& resource) {
         resource = nullptr;
     }
 }
-}  // namespace ScratchEngine
+
+#pragma endregion templates

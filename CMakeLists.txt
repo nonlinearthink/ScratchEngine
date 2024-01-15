@@ -4,6 +4,7 @@ message("Building with CMake version: ${CMAKE_VERSION}")
 
 # Generate compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_CXX_STANDARD 17)
 
 project(ScratchEngine VERSION 0.1.0 LANGUAGES C CXX)
 

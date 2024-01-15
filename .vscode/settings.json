@@ -1,8 +1,18 @@
 {
     "C_Cpp.intelliSenseEngine": "disabled",
+    "C_Cpp.default.cppStandard": "c++17",
+    "cmake.generator": "Ninja",
     "clangd.arguments": [
-        "-std=c++17",
+        "--clang-tidy",
         "-compile-commands-dir=build/Debug"
     ],
-    "cmake.generator": "Ninja",
+    "clangd.fallbackFlags": [
+        "-std=c++17",
+    ],
+    "maptz.regionfolder": {
+        "[cpp]": {
+            "foldEndRegex": "^[\\s]*#pragma[\\s]*endregion.*[\\s]*$",
+            "foldStartRegex": "^[\\s]*#pragma[\\s]*region[\\s]*(.*)[\\s]*$"
+        },
+    }
 }

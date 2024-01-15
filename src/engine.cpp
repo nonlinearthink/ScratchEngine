@@ -4,9 +4,7 @@ using namespace ScratchEngine;
 using namespace Microsoft::WRL;
 
 bool Engine::Initialize() {
-    if (main_device_) {
-        Shutdown();
-    }
+    if (main_device_) Shutdown();
 
     UINT dxgi_factory_flags{0};
 
@@ -27,20 +25,16 @@ bool Engine::Initialize() {
 
     THROW_IF_FAILED(
         hr = CreateDXGIFactory2(dxgi_factory_flags, IID_PPV_ARGS(&factory_)));
-    if (FAILED(hr)) {
-        return HandleInitializeFailed();
-    }
+    if (FAILED(hr)) return HandleInitializeFailed();
 
     // Get a suitable adapter.
     ComPtr<IDXGIAdapter4> main_adapter;
     main_adapter.Attach(GetSuitableAdapter());
-    if (!main_adapter) {
-        return HandleInitializeFailed();
-    }
+    if (!main_adapter) return HandleInitializeFailed();
 
     // Check the maximum feature level.
     D3D_FEATURE_LEVEL maximum_feature_level{
-        GetMaxFeatureLevel(main_adapter.Get())};
+        Engine::GetMaxFeatureLevel(main_adapter.Get())};
     if (maximum_feature_level <= MINIMUM_D3D_FEATURN_LEVEL) {
         return HandleInitializeFailed();
     }
@@ -49,16 +43,14 @@ bool Engine::Initialize() {
     THROW_IF_FAILED(hr = D3D12CreateDevice(main_adapter.Get(),
                                            maximum_feature_level,
                                            IID_PPV_ARGS(&main_device_)));
-    if (FAILED(hr)) {
-        return HandleInitializeFailed();
-    }
+    if (FAILED(hr)) return HandleInitializeFailed();
+
     NAME_D3D12_OBJECT(main_device_, L"Main D3D12 Device");
 
+    // Placement new, D3D12Command should't have some member pointing to heap.
     new (&d3d12_command_)
-        D3D12Command(main_device_, D3D12_COMMAND_LIST_TYPE_DIRECT);
-    if (!d3d12_command_.valid()) {
-        return HandleInitializeFailed();
-    }
+        D3D12Command(*main_device_, D3D12_COMMAND_LIST_TYPE_DIRECT);
+    if (!d3d12_command_.valid()) return HandleInitializeFailed();
 
 #ifdef _DEBUG
     {
@@ -80,7 +72,7 @@ void Engine::Render() {
     // This will frees the memory that was used to store commands.
     d3d12_command_.BeginFrame();
 
-    ID3D12GraphicsCommandList6 *command_list{d3d12_command_.command_list()};
+    ID3D12GraphicsCommandList6 &command_list{d3d12_command_.command_list()};
 
     // Done recording commands and execute commands now. Signal and increase the
     // fence value for next frame.
@@ -94,9 +86,7 @@ void Engine::Shutdown() {
 
 #ifdef _DEBUG
     {
-        if (!main_device_) {
-            return;
-        }
+        if (!main_device_) return;
 
         {
             ComPtr<ID3D12InfoQueue> info_queue;
@@ -124,6 +114,27 @@ void Engine::Shutdown() {
 #endif
 }
 
+D3D_FEATURE_LEVEL Engine::GetMaxFeatureLevel(IDXGIAdapter4 *adapter) {
+    constexpr D3D_FEATURE_LEVEL feature_levels[4]{
+        D3D_FEATURE_LEVEL_11_0,
+        D3D_FEATURE_LEVEL_11_1,
+        D3D_FEATURE_LEVEL_12_0,
+        D3D_FEATURE_LEVEL_12_1,
+    };
+
+    D3D12_FEATURE_DATA_FEATURE_LEVELS feature_levels_info;
+    feature_levels_info.NumFeatureLevels = _countof(feature_levels);
+    feature_levels_info.pFeatureLevelsRequested = feature_levels;
+
+    ComPtr<ID3D12Device> device;
+    THROW_IF_FAILED(D3D12CreateDevice(adapter, MINIMUM_D3D_FEATURN_LEVEL,
+                                      IID_PPV_ARGS(&device)));
+    THROW_IF_FAILED(device->CheckFeatureSupport(D3D12_FEATURE_FEATURE_LEVELS,
+                                                &feature_levels_info,
+                                                sizeof(feature_levels_info)));
+    return feature_levels_info.MaxSupportedFeatureLevel;
+}
+
 bool Engine::HandleInitializeFailed() {
     Shutdown();
     return false;
@@ -146,25 +157,4 @@ IDXGIAdapter4 *Engine::GetSuitableAdapter() {
     }
 
     return nullptr;
-}
-
-D3D_FEATURE_LEVEL Engine::GetMaxFeatureLevel(IDXGIAdapter4 *adapter) {
-    constexpr D3D_FEATURE_LEVEL feature_levels[4] = {
-        D3D_FEATURE_LEVEL_11_0,
-        D3D_FEATURE_LEVEL_11_1,
-        D3D_FEATURE_LEVEL_12_0,
-        D3D_FEATURE_LEVEL_12_1,
-    };
-
-    D3D12_FEATURE_DATA_FEATURE_LEVELS feature_levels_info;
-    feature_levels_info.NumFeatureLevels = _countof(feature_levels);
-    feature_levels_info.pFeatureLevelsRequested = feature_levels;
-
-    ComPtr<ID3D12Device> device;
-    THROW_IF_FAILED(D3D12CreateDevice(adapter, MINIMUM_D3D_FEATURN_LEVEL,
-                                      IID_PPV_ARGS(&device)));
-    THROW_IF_FAILED(device->CheckFeatureSupport(D3D12_FEATURE_FEATURE_LEVELS,
-                                                &feature_levels_info,
-                                                sizeof(feature_levels_info)));
-    return feature_levels_info.MaxSupportedFeatureLevel;
 }

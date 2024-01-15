@@ -27,11 +27,12 @@ private:
     ID3D12Device8* main_device_{nullptr};
     D3D12Command d3d12_command_;
 
+    // Get the maximum feature level supported by the device.
+    static D3D_FEATURE_LEVEL GetMaxFeatureLevel(IDXGIAdapter4* adapter);
+
     // Initialize fail
     bool HandleInitializeFailed();
     // Get a suitable adapter that supports minimum feature level.
     IDXGIAdapter4* GetSuitableAdapter();
-    // Get the maximum feature level supported by the device.
-    D3D_FEATURE_LEVEL GetMaxFeatureLevel(IDXGIAdapter4* adapter);
 };
 }  // namespace ScratchEngine

@@ -2,7 +2,9 @@
 
 using namespace ScratchEngine;
 
-D3D12Command::D3D12Command(ID3D12Device8* const device,
+#pragma region D3D12Command
+
+D3D12Command::D3D12Command(ID3D12Device8& device,
                            D3D12_COMMAND_LIST_TYPE type) {
     HRESULT hr{S_OK};
 
@@ -13,7 +15,7 @@ D3D12Command::D3D12Command(ID3D12Device8* const device,
     desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
     desc.Type = type;
     THROW_IF_FAILED(
-        hr = device->CreateCommandQueue(&desc, IID_PPV_ARGS(&command_queue_)));
+        hr = device.CreateCommandQueue(&desc, IID_PPV_ARGS(&command_queue_)));
     if (FAILED(hr)) {
         valid_ = false;
         return;
@@ -25,9 +27,9 @@ D3D12Command::D3D12Command(ID3D12Device8* const device,
                                           : L"Command Queue");
 
     // Create the command allocator per frame.
-    for (uint32_t i{0}; i < FRAME_BUFFER_COUNT; i++) {
+    for (u32 i{0}; i < FRAME_BUFFER_COUNT; i++) {
         CommandFrame& frame{command_frames_[i]};
-        THROW_IF_FAILED(hr = device->CreateCommandAllocator(
+        THROW_IF_FAILED(hr = device.CreateCommandAllocator(
                             type, IID_PPV_ARGS(&frame.command_allocator)));
         if (FAILED(hr)) {
             valid_ = false;
@@ -41,7 +43,7 @@ D3D12Command::D3D12Command(ID3D12Device8* const device,
     }
 
     // Create the command list.
-    THROW_IF_FAILED(hr = device->CreateCommandList(
+    THROW_IF_FAILED(hr = device.CreateCommandList(
                         0, type, command_frames_[0].command_allocator, nullptr,
                         IID_PPV_ARGS(&command_list_)));
     if (FAILED(hr)) {
@@ -57,8 +59,8 @@ D3D12Command::D3D12Command(ID3D12Device8* const device,
                                          : L"Command List");
 
     // Create the fence.
-    THROW_IF_FAILED(hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE,
-                                             IID_PPV_ARGS(&fence_)));
+    THROW_IF_FAILED(hr = device.CreateFence(0, D3D12_FENCE_FLAG_NONE,
+                                            IID_PPV_ARGS(&fence_)));
     if (FAILED(hr)) {
         valid_ = false;
         return;
@@ -89,7 +91,7 @@ void D3D12Command::EndFrame() {
     command_queue_->ExecuteCommandLists(_countof(command_list),
                                         &command_list[0]);
     // signal the fence with the new fence value.
-    uint64_t& fence_value{fence_value_};
+    u64& fence_value{fence_value_};
     ++fence_value;
     CommandFrame& frame{command_frames_[frame_index_]};
     frame.fence_value = fence_value;
@@ -111,17 +113,21 @@ void D3D12Command::Release() {
     ReleaseResource(command_queue_);
     ReleaseResource(command_list_);
 
-    for (uint32_t i{0}; i < FRAME_BUFFER_COUNT; i++) {
+    for (u32 i{0}; i < FRAME_BUFFER_COUNT; i++) {
         command_frames_[i].Release();
     }
 }
 
 void D3D12Command::Flush() {
-    for (uint32_t i{0}; i < FRAME_BUFFER_COUNT; i++) {
+    for (u32 i{0}; i < FRAME_BUFFER_COUNT; i++) {
         command_frames_[i].Wait(fence_event_, fence_);
     }
     frame_index_ = 0;
 }
+
+#pragma endregion D3D12Command
+
+#pragma region D3D12Command::CommandFrame
 
 void D3D12Command::CommandFrame::Wait(HANDLE fence_event, ID3D12Fence1* fence) {
     assert(fence_event && fence);
@@ -139,3 +145,5 @@ void D3D12Command::CommandFrame::Wait(HANDLE fence_event, ID3D12Fence1* fence) {
 void D3D12Command::CommandFrame::Release() {
     ReleaseResource(command_allocator);
 }
+
+#pragma endregion D3D12Command::CommandFrame
